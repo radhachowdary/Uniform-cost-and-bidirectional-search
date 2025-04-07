@@ -1,0 +1,77 @@
+
+from collections import deque
+import heapq
+graph = {
+    'S': {'A': 1, 'B': 4},
+    'A': {'B': 2, 'C': 5},
+    'B': {'C': 1},
+    'C': {'t': 3},
+    't': {}  
+}
+# 1. Uniform Cost Search Implementation
+def uniform_cost_search(graph, start, goal):
+    # Priority queue: (cumulative_cost, current_node, path)
+    frontier = []
+    heapq.heappush(frontier, (0, start, [start]))
+    explored = set()
+    while frontier:
+        cost, node, path = heapq.heappop(frontier)
+        if node == goal:
+            return path, cost
+        if node not in explored:
+            explored.add(node)
+            for neighbor, edge_cost in graph.get(node, {}).items():
+                if neighbor not in explored:
+                    new_cost = cost + edge_cost
+                    new_path = path + [neighbor]
+                    heapq.heappush(frontier, (new_cost, neighbor, new_path))
+    return None, float('inf') 
+# 2. Bidirectional Search Implementation
+def bidirectional_search(graph, start, goal):
+    forward_queue = deque([(start, [start])])
+    forward_visited = {start: [start]}
+    backward_queue = deque([(goal, [goal])])
+    backward_visited = {goal: [goal]}
+    while forward_queue and backward_queue:
+        current_forward, path_forward = forward_queue.popleft()
+        if current_forward in backward_visited:
+            backward_path = backward_visited[current_forward]
+            backward_path = backward_path[:-1]  
+            backward_path.reverse()
+            full_path = path_forward + backward_path
+            return full_path
+        for neighbor in graph.get(current_forward, {}):
+            if neighbor not in forward_visited:
+                forward_visited[neighbor] = path_forward + [neighbor]
+                forward_queue.append((neighbor, path_forward + [neighbor]))
+        current_backward, path_backward = backward_queue.popleft()
+        if current_backward in forward_visited:
+            forward_path = forward_visited[current_backward]
+            forward_path = forward_path[:-1]  
+            path_backward.reverse()
+            full_path = forward_path + path_backward
+            return full_path
+        reversed_graph = reverse_graph(graph)
+        for neighbor in reversed_graph.get(current_backward, {}):
+            if neighbor not in backward_visited:
+                backward_visited[neighbor] = path_backward + [neighbor]
+                backward_queue.append((neighbor, path_backward + [neighbor]))
+    return None  
+def reverse_graph(graph):
+    reversed_g = {}
+    for node in graph:
+        reversed_g[node] = {}
+    for node in graph:
+        for neighbor, weight in graph[node].items():
+            if neighbor not in reversed_g:
+                reversed_g[neighbor] = {}
+            reversed_g[neighbor][node] = weight
+    return reversed_g
+if __name__ == "__main__":
+    print("Testing Uniform Cost Search:")
+    path, cost = uniform_cost_search(graph, 'S', 't')
+    print(f"Optimal path: {path}")
+    print(f"Total cost: {cost}\n")
+    print("Testing Bidirectional Search:")
+    path = bidirectional_search(graph, 'S', 't')
+    print(f"Path found: {path}")
